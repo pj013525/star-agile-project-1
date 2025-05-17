@@ -1,29 +1,50 @@
 pipeline {
     agent any
-    stages{
-        stage('build project'){
-            steps{
-                git url:'https://github.com/pj013525/star-agile-project-1/', branch: "master"
-                sh 'mvn clean package'
-              
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git url: 'https://github.com/pj013525/star-agile-project-1/', branch: 'master'
             }
         }
-        stage('Build docker image'){
-            steps{
-                script{
+
+        stage('Build Project') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
                     sh 'docker build -t pj013525/finance-pro-image:v1 .'
                     sh 'docker images'
                 }
             }
         }
-         
-        
-     stage('Deploy') {
+
+        stage('Push Docker Image') {
+            when {
+                branch 'master'
+            }
             steps {
-                sh 'sudo docker run -itd --name finance-pro-cont -p 8083:8081 pj013525/finance-pro-image:v1'
-                  
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    sh 'echo "$PASS" | docker login -u "$USER" --password-stdin'
+                    sh 'docker push pj013525/finance-pro-image:v1'
                 }
             }
-        
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Stop and remove existing container if running
+                    sh 'docker rm -f finance-pro-cont || true'
+
+                    // Run the container
+                    sh 'docker run -d --name finance-pro-cont -p 8081:8080 pj013525/finance-pro-image:v1'
+                }
+            }
+        }
     }
 }
