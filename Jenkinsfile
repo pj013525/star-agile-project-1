@@ -42,7 +42,7 @@ pipeline {
                     sh 'docker rm -f finance-pro-cont || true'
 
                     // Run the container
-                    sh 'docker run -d --name finance-pro-cont -p 8081:8080 pj013525/finance-pro-image:v1'
+                    sh 'docker run -d --name finance-pro-cont -p 8081:8081 pj013525/finance-pro-image:v1'
                 }
             }
         }
